@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>签到规则设置</title>
+  <style>
+    body {
+      padding: 20px;
+    }
+
+    .rule-item {
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #ddd;
+    }
+
+    .selector-input {
+      width: 300px;
+      margin: 5px;
+    }
+
+    #currentKeywords {
+      font-size: larger;
+      color: #43bb81;
+      width: fit-content;
+      background: #f4f5f7;
+      padding: 5px 10px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>签到规则设置</h2>
+
+  <div id="rulesContainer"></div>
+<!-- 
+  <button id="detectElements">检测签到元素</button>
+  <button id="saveRules">保存规则</button> -->
+  <div>
+    <h3>
+      检测页面中的签到元素时，会根据以下关键字进行筛选：
+    </h3>
+    <!-- 展示当前关键字 -->
+    <p id="currentKeywords"></p>
+    <label for="checkinKeywords">修改关键字：</label>
+    <!-- 检测页面中的签到元素关键字 -->
+    <input type="text" id="checkinKeywords" placeholder="输入关键字（英文逗号分隔）">
+    <!-- 提交按钮 -->
+    <button id="submitKeywords">提交</button>
+  </div>
+  <script src="options.js"></script>
+</body>
+
+</html>
