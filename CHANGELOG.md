@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 ↓ 从这里插入新记录 ↓
+## 0.2.0 (2025-12-17)
+
+  - 添加span节点的支持
+  - 完善侧边栏显示
+
 ## 0.1.0 (2025-12-11)
 
   - 基本签到功能

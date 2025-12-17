@@ -1,4 +1,10 @@
 <script setup lang="ts">
+
+type CheckinItem = {
+  link: string;
+  homePageName: string;
+  btnXPath: string;
+}
 document.addEventListener('DOMContentLoaded', async () => {
   await initPopup();
 });
@@ -88,52 +94,47 @@ function formatDate(dateString: string) {
 
 // 加载网站列表
 async function loadUrlList() {
-  const data = await chrome.storage.sync.get('checkinLists');
-  // console.log('datauuuu:', data);
+  const data = await chrome.storage.sync.get('checkinLists').then(res => res.checkinLists) as string;
+  console.log('datauuuu:', typeof data, data);
   const list = document.getElementById('urlList');
   if (list) {
     list.innerHTML = '';
-    if (!data.checkinLists || Object.keys(data.checkinLists).length === 0) {
+    if (!data || data.length === 0) {
       list.innerHTML = '<li class="empty">暂无签到网站，点击"添加当前页面"开始使用</li>';
       return;
     }
+    const checkinLists = JSON.parse(data) as CheckinItem[] || [];
 
-    if (Object.keys(data).length > 0 && data.checkinLists) {
-      const checkinLists = JSON.parse(data.checkinLists as string);
-      for (const item of checkinLists as Array<Record<string, any>>) {
-        // console.log('url1:', item);
-        if (!item) continue;
-        Object.keys(item).forEach((urlitem, index) => {
-          // console.log('url2:', item[urlitem]);
-          const subitem = item[urlitem];
-          // console.log('url3:', subitem['buttons'], subitem['links']);
-          const li = document.createElement('li');
-          li.className = 'url-item';
-          // console.log('url:', subitem);
-          // const rules = (data.checkinRules as Record<string, { buttonSelector?: string; buttonText?: string; xpath?: string }>)[url];
-          // <span class="url-rules">${rules ? '✓ 已配置规则' : '⚠ 需配置规则'}</span>
-          li.innerHTML = `
+    for (const item of checkinLists) {
+      // console.log('url1:', item);
+      if (!item) continue;
+      // console.log('url2:', item[urlitem]);
+      // console.log('url3:', subitem['buttons'], subitem['links']);
+      const li = document.createElement('li');
+      li.className = 'url-item';
+      // console.log('url:', subitem);
+      // const rules = (data.checkinRules as Record<string, { buttonSelector?: string; buttonText?: string; xpath?: string }>)[url];
+      // <span class="url-rules">${rules ? '✓ 已配置规则' : '⚠ 需配置规则'}</span>
+      // <span class="url-index">${checkinLists.length}个</span>
+      li.innerHTML = `
             <div class="url-info">
-              <span class="url-index">${index + 1}.</span>
-              <span class="url-hostname">${subitem['links']}</span>
+              <span class="url-hostname">${item.homePageName}</span>
             </div>
             <div class="url-actions">
-            <button class="btn-small remove-btn" data-url="${subitem['links']}">移除</button>
+            <button class="btn-small remove-btn" data-url="${item.link}">移除</button>
             </div>
             `;
-          // <button class="btn-small test-btn" data-url="${subitem['links']}">测试</button>
-          // <button class="btn-small edit-btn" data-url="${subitem['links']}">编辑</button>
+      // <button class="btn-small test-btn" data-url="${subitem['links']}">测试</button>
+      // <button class="btn-small edit-btn" data-url="${subitem['links']}">编辑</button>
 
-          list.appendChild(li);
-        });
-      }
-
+      list.appendChild(li);
     }
 
-  }
 
-  // 绑定按钮事件
-  attachListEvents();
+
+    // 绑定按钮事件
+    attachListEvents();
+  }
 }
 
 // 绑定列表事件
@@ -189,21 +190,25 @@ function attachListEvents() {
 // 移除签到网站
 async function removeCheckinUrl(url: string) {
   const hostname = new URL(url).hostname;
-  const data = await chrome.storage.sync.get(['checkinUrls', 'checkinLists']);
-  const urls = Array.isArray(data.checkinUrls) ? data.checkinUrls : [];
-  const index = urls.indexOf(hostname);
-  if (index > -1) {
-    urls.splice(index, 1);
-    console.log('移除签到网站:', hostname, urls, index);
-    const lists = JSON.parse(data.checkinLists as string) || [];
-    const index1 = lists.indexOf(hostname);
-      lists.splice(index1, 1);
-
-    await chrome.storage.sync.set({
-      checkinUrls: urls,
-      checkinLists: JSON.stringify(lists)
-    });
+  const data = await chrome.storage.sync.get('checkinLists').then(res => res.checkinLists) as string;
+  if (!data || data.length === 0) {
+    return;
   }
+  const checkinLists: CheckinItem[] = JSON.parse(data) || [];
+  await chrome.storage.sync.set({
+    checkinLists: JSON.stringify(checkinLists.filter(item => item.link !== url))
+  });
+  // const index = checkinLists.indexOf(hostname);
+  // if (index > -1) {
+  //   console.log('移除签到网站:', hostname, checkinLists, index);
+  //   const lists = JSON.parse(data.checkinLists as string) || [];
+  //   const index1 = lists.indexOf(hostname);
+  //   lists.splice(index1, 1);
+
+  //   await chrome.storage.sync.set({
+  //     checkinLists: JSON.stringify(lists)
+  //   });
+  // }
 }
 
 // 打开详细设置页面

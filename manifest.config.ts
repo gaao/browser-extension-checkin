@@ -36,7 +36,7 @@ export default defineManifest({
    background: {
     service_worker: "src/background/background.js"
   },
-  options_page: "src/options/options.html",
+  options_page: "src/options/index.html",
   side_panel: {
     default_path: 'src/sidepanel/index.html',
   },

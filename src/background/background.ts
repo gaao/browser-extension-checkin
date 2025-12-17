@@ -1,11 +1,16 @@
 import logoimg from '@/assets/logo.png';
 // background.js
 console.log('background.js');
+type CheckinItem = {
+  link: string;
+  homePageName: string;
+  btnXPath: string;
+}
 // 存储用户选择
 let userPreferences = {
   autoCheckin: true,
-  checkinUrls: [] as string[],
-  checkinLists: [] as Record<string, { buttons: { selector: string; text: string; }[]; links: string; }>[],
+  // checkinUrls: [] as string[],
+  checkinLists: '',
   checkinRules: {} as Record<string, { buttonSelector: any; buttonText: string; xpath: string; }>,
   lastCheckinDate: null as string | null,
   dontAskAgain: false,  // 不再询问选项
@@ -57,7 +62,7 @@ async function checkAndAskForCheckin() {
   }
 
   // 检查是否有需要签到的网站
-  if (!userPreferences.checkinUrls || userPreferences.checkinUrls.length === 0) {
+  if (!userPreferences.checkinLists || userPreferences.checkinLists.length === 0) {
     console.log('没有需要签到的网站');
     return;
   }
@@ -74,7 +79,7 @@ function showCheckinNotification() {
     type: 'basic',
     iconUrl: logoimg,
     title: '每日签到提醒',
-    message: `今天有 ${userPreferences.checkinUrls.length} 个网站需要签到，是否现在执行？`,
+    message: `今天有 ${userPreferences.checkinLists.length} 个网站需要签到，是否现在执行？`,
     priority: 2,
     buttons: [
       { title: '立即签到' },
@@ -117,7 +122,7 @@ chrome.notifications.onButtonClicked.addListener(async (notificationId, buttonIn
 async function executeCheckins() {
   const today = new Date().toDateString();
   let successCount = 0;
-  let totalCount = userPreferences.checkinUrls.length;
+  let totalCount = userPreferences.checkinLists.length;
   // console.log('签到url2:', userPreferences.checkinUrls,userPreferences.checkinLists,JSON.parse(userPreferences.checkinLists as unknown as string));
   // 显示开始签到通知
   chrome.notifications.create('checkin-start', {
@@ -127,11 +132,15 @@ async function executeCheckins() {
     message: `正在为 ${totalCount} 个网站执行签到...`,
     priority: 1
   });
-  const checkinLists = JSON.parse(userPreferences.checkinLists as unknown as string) as Array<Record<string, { buttons: { selector: string; text: string; }[]; links: string; }>>
-  // console.log('签到item1:', checkinLists);
+  const data = await chrome.storage.sync.get('checkinLists').then(res => res.checkinLists) as string;
+  if (!data || data.length === 0) {
+    return;
+  }
+  const checkinLists = JSON.parse(data) as Array<CheckinItem>
+  console.log('签到item1:', checkinLists);
   for (let i = 0; i < checkinLists.length; i++) {
     const item = checkinLists[i];
-    const result = await performSingleCheckin(Object.values(item)[0]);
+    const result = await performSingleCheckin(item);
     if (result) successCount++;
     // 每个网站之间间隔2秒，避免请求过快
     // await new Promise(resolve => setTimeout(resolve, 2000));
@@ -146,12 +155,12 @@ async function executeCheckins() {
 }
 
 // 执行单个网站签到
-async function performSingleCheckin(item: { buttons: { selector: string; text: string; }[]; links: string; }) {
+async function performSingleCheckin(item: CheckinItem) {
   try {
-    // console.log('签到item3:', item, item.links);
+    console.log('签到item3:', item, item.link);
     // 创建隐藏标签页
     const tab = await chrome.tabs.create({
-      url: item.links,
+      url: item.link,
       // active: false
     });
 
@@ -160,55 +169,58 @@ async function performSingleCheckin(item: { buttons: { selector: string; text: s
       await waitForPageLoad(tab.id);
     }
     // 执行签到逻辑：先获取真正的签到按钮，再点击
-    if (item.buttons) {
+    if (item.btnXPath) {
       let result = false;
       if (tab.id !== undefined) {
-        // 遍历按钮规则，依次尝试点击
-        for (const button of item.buttons) {
-          // console.log('签到item4:', button);
-          // 先执行脚本获取可点击的签到按钮
-          // 直接解构 result，避免空对象
-          const [{ result: resbutton }] = await chrome.scripting.executeScript({
-            target: { tabId: tab.id! },
-            func: (button: { selector: string; text: string }) => {
-              if (button.selector) {
-                const elements = document.querySelectorAll(button.selector);
-                for (let i = 0; i < elements.length; i++) {
-                  const el = elements[i] as HTMLElement;
-                  // if (el) return el.outerHTML; // 返回可序列化的字符串，避免 DOM 对象无法传递
-                  if (el) {
-                    el.click();
-                    console.log('点击了按钮');
-                    return true;
-                  }
-                  return false;
+        console.log('签到item4:', typeof item.btnXPath,item.btnXPath);
+        // const ele = 
+        const [{ result: resbutton }] = await chrome.scripting.executeScript({
+          target: { tabId: tab.id! },
+          func: (XPath: string) => {
+            if (XPath) {
+              try {
+                // 使用 XPath 查找元素
+                const result = document.evaluate(
+                  XPath,
+                  document.body,
+                  null,
+                  XPathResult.FIRST_ORDERED_NODE_TYPE,
+                  null
+                );
+                const element = result.singleNodeValue as HTMLElement;
+                if (element) {
+                  element.click();
+                  console.log('通过 XPath 点击了按钮');
+                  return true;
                 }
+              } catch (e) {
+                console.error('XPath 执行错误:', e);
               }
-              return null;
-            },
-            args: [button],
-            world: 'MAIN'
-          });
-          console.log('resbutton:', resbutton);
-          // // 方法2: 使用文本匹配（恢复并增强）
-          // if (button.text) {
-          //   const keywords = button.text.split('|').map(k => k.trim());
-          //   // 扩大扫描范围，包含 img 的 alt 属性
-          //   const candidates = document.querySelectorAll(
-          //     'button, a, span, div, input[type="button"], input[type="submit"], img'
-          //   );
-          //   for (const candidate of candidates) {
-          //     const txt = (
-          //       candidate.textContent ||
-          //       (candidate as HTMLInputElement).value ||
-          //       (candidate as HTMLImageElement).alt ||
-          //       ''
-          //     ).trim();
-          //     if (keywords.some(k => txt.includes(k))) return candidate as HTMLElement;
-          //   }
-          // }
+            }
+            return false;
+          },
+          args: [item.btnXPath],
+          world: 'MAIN'
+        });
+        console.log('resbutton:', resbutton);
+        // // 方法2: 使用文本匹配（恢复并增强）
+        // if (button.text) {
+        //   const keywords = button.text.split('|').map(k => k.trim());
+        //   // 扩大扫描范围，包含 img 的 alt 属性
+        //   const candidates = document.querySelectorAll(
+        //     'button, a, span, div, input[type="button"], input[type="submit"], img'
+        //   );
+        //   for (const candidate of candidates) {
+        //     const txt = (
+        //       candidate.textContent ||
+        //       (candidate as HTMLInputElement).value ||
+        //       (candidate as HTMLImageElement).alt ||
+        //       ''
+        //     ).trim();
+        //     if (keywords.some(k => txt.includes(k))) return candidate as HTMLElement;
+        //   }
+        // }
 
-        }
 
         // // 签到完成后关闭标签页
         // setTimeout(() => {
@@ -225,7 +237,7 @@ async function performSingleCheckin(item: { buttons: { selector: string; text: s
       //       chrome.tabs.remove(tab.id).catch(() => { });
       //     }
       //   }, 3000);
-      console.log('新建页面的url:', item.links);
+      console.log('新建页面的url:', item.link);
       // 如果没有规则，也关闭标签页
       // setTimeout(() => {
       //   if (tab.id !== undefined) {
@@ -352,7 +364,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       // console.log('getStatus1:', userPreferences.checkinUrls);
       sendResponse({
         lastCheckinDate: userPreferences.lastCheckinDate,
-        totalUrls: userPreferences.checkinUrls.length
+        totalUrls: userPreferences.checkinLists ? JSON.parse(userPreferences.checkinLists).length : 0
       });
       return true;
 
