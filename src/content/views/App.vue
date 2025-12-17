@@ -120,8 +120,9 @@ async function detectCheckinElements() {
         XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
         null
       );
-      if (elements) {
+      if (elements && elements.snapshotLength > 0) {
         hasCheckinSelector = true;
+        console.log('elements:', keyword, elements);
         return
       } else {
         continue;
