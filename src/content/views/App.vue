@@ -157,26 +157,26 @@ async function detectCheckinElements() {
   return hasCheckinSelector;
 }
 
-// 获取元素的CSS选择器
-function getSelector(element: Node) {
-  if (element.nodeType !== Node.ELEMENT_NODE) {
-    return '';
-  }
-  const e = element as Element || HTMLImageElement;
-  if (e.id) {
-    return `#${e.id}`;
-  }
-  if (e.className) {
-    return `.${e.className.split(' ').join('.')}`;
-  }
-  if (e.tagName === 'IMG') {
-    return `img[alt="${(e as HTMLImageElement).alt?.trim() || ''}"]`;
-  }
-  // if (e.tagName === 'SPAN') {
-  //   return `span[text="${(e as Element).textContent?.trim() || ''}"]`;
-  // }
-  return e.tagName;
-}
+// // 获取元素的CSS选择器
+// function getSelector(element: Node) {
+//   if (element.nodeType !== Node.ELEMENT_NODE) {
+//     return '';
+//   }
+//   const e = element as Element || HTMLImageElement;
+//   if (e.id) {
+//     return `#${e.id}`;
+//   }
+//   if (e.className) {
+//     return `.${e.className.split(' ').join('.')}`;
+//   }
+//   if (e.tagName === 'IMG') {
+//     return `img[alt="${(e as HTMLImageElement).alt?.trim() || ''}"]`;
+//   }
+//   // if (e.tagName === 'SPAN') {
+//   //   return `span[text="${(e as Element).textContent?.trim() || ''}"]`;
+//   // }
+//   return e.tagName;
+// }
 
 
 </script>

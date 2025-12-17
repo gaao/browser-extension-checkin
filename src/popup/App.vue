@@ -189,7 +189,7 @@ function attachListEvents() {
 
 // 移除签到网站
 async function removeCheckinUrl(url: string) {
-  const hostname = new URL(url).hostname;
+
   const data = await chrome.storage.sync.get('checkinLists').then(res => res.checkinLists) as string;
   if (!data || data.length === 0) {
     return;
@@ -198,17 +198,6 @@ async function removeCheckinUrl(url: string) {
   await chrome.storage.sync.set({
     checkinLists: JSON.stringify(checkinLists.filter(item => item.link !== url))
   });
-  // const index = checkinLists.indexOf(hostname);
-  // if (index > -1) {
-  //   console.log('移除签到网站:', hostname, checkinLists, index);
-  //   const lists = JSON.parse(data.checkinLists as string) || [];
-  //   const index1 = lists.indexOf(hostname);
-  //   lists.splice(index1, 1);
-
-  //   await chrome.storage.sync.set({
-  //     checkinLists: JSON.stringify(lists)
-  //   });
-  // }
 }
 
 // 打开详细设置页面
