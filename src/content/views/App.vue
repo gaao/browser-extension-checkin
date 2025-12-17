@@ -183,7 +183,7 @@ async function detectCheckinElements() {
 
 <template>
   <div class="popup-container" v-show="showBtn">
-    <input type="text" placeholder="指定签到按钮的xpath" v-model="checkinSelector">
+    <input type="text" placeholder="对应按钮的xpath" v-model="checkinSelector">
     <input type="text" placeholder="网站名" v-model="checkinHomeText">
     <button class="add-to-list" @click="addToList()">
       <!-- <img src="@/assets/logo.png" class="logo crx" alt="logo"> -->
