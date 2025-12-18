@@ -15,12 +15,44 @@ let userPreferences = {
   lastCheckinDate: null as string | null,
   dontAskAgain: false,  // 不再询问选项
   rememberChoice: {}    // 记录每个网站的选择
-};
+} as Record<string, any>;
 
+const isJSON = function (str: any) {
+  if (typeof str == "string") {
+    try {
+      var obj = JSON.parse(str);
+      if (typeof obj == "object" && obj) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  } else if (typeof str == "object") {
+    return Object.prototype.toString.call(obj).toLocaleLowerCase() == "[object object]" && !obj.length;
+  }
+  return false;
+}
 // 初始化
 async function initBackground() {
   const data = await chrome.storage.sync.get(Object.keys(userPreferences));
-  Object.assign(userPreferences, data);
+  console.log('data:', data);
+  if (data) {
+    Object.keys(data).forEach(key => {
+      if (key in userPreferences) {
+        const isJson = isJSON(data[key]);
+        if (isJson) {
+          userPreferences[key] = JSON.parse(data[key] as string);
+        } else {
+          userPreferences[key] = data[key];
+        }
+      }
+    });
+  }
+  console.log('userPreferencesdata:', userPreferences);
+
+  // Object.assign(userPreferences, data);
 }
 
 // 监听浏览器启动
@@ -132,11 +164,8 @@ async function executeCheckins() {
     message: `正在为 ${totalCount} 个网站执行签到...`,
     priority: 1
   });
-  const data = await chrome.storage.sync.get('checkinLists').then(res => res.checkinLists) as string;
-  if (!data || data.length === 0) {
-    return;
-  }
-  const checkinLists = JSON.parse(data) as Array<CheckinItem>
+  
+  const checkinLists = userPreferences.checkinLists as Array<CheckinItem>;
   console.log('签到item1:', checkinLists);
   for (let i = 0; i < checkinLists.length; i++) {
     const item = checkinLists[i];
@@ -172,7 +201,7 @@ async function performSingleCheckin(item: CheckinItem) {
     if (item.btnXPath) {
       let result = false;
       if (tab.id !== undefined) {
-        console.log('签到item4:', typeof item.btnXPath,item.btnXPath);
+        console.log('签到item4:', typeof item.btnXPath, item.btnXPath);
         // const ele = 
         const [{ result: resbutton }] = await chrome.scripting.executeScript({
           target: { tabId: tab.id! },
@@ -364,7 +393,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       // console.log('getStatus1:', userPreferences.checkinUrls);
       sendResponse({
         lastCheckinDate: userPreferences.lastCheckinDate,
-        totalUrls: userPreferences.checkinLists ? JSON.parse(userPreferences.checkinLists).length : 0
+        totalUrls: userPreferences.checkinLists.length || 0
       });
       return true;
 

@@ -214,7 +214,7 @@ async function detectCheckinElements() {
   display: flex;
   justify-content: center;
   font-size: 13px;
-  padding: 0.5rem 1rem;
+  padding: 3px 12px;
   border-radius: 9999px;
   box-shadow:
     0 1px 3px 0 rgb(0 0 0 / 0.3),
