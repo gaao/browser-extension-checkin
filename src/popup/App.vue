@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+import CheckinListCU from '@/components/CheckinListCU.vue';
 
 type CheckinItem = {
   link: string;
   homePageName: string;
   btnXPath: string;
 }
+const checkinLists = ref<Array<CheckinItem>>([]);
 document.addEventListener('DOMContentLoaded', async () => {
   await initPopup();
 });
@@ -96,42 +99,9 @@ function formatDate(dateString: string) {
 async function loadUrlList() {
   const data = await chrome.storage.sync.get('checkinLists').then(res => res.checkinLists) as string;
   console.log('datauuuu:', typeof data, data);
+  checkinLists.value = JSON.parse(data) as CheckinItem[] || [];
   const list = document.getElementById('urlList');
   if (list) {
-    list.innerHTML = '';
-    if (!data || data.length === 0) {
-      list.innerHTML = '<li class="empty">暂无签到网站，点击"添加当前页面"开始使用</li>';
-      return;
-    }
-    const checkinLists = JSON.parse(data) as CheckinItem[] || [];
-
-    for (const item of checkinLists) {
-      // console.log('url1:', item);
-      if (!item) continue;
-      // console.log('url2:', item[urlitem]);
-      // console.log('url3:', subitem['buttons'], subitem['links']);
-      const li = document.createElement('li');
-      li.className = 'url-item';
-      // console.log('url:', subitem);
-      // const rules = (data.checkinRules as Record<string, { buttonSelector?: string; buttonText?: string; xpath?: string }>)[url];
-      // <span class="url-rules">${rules ? '✓ 已配置规则' : '⚠ 需配置规则'}</span>
-      // <span class="url-index">${checkinLists.length}个</span>
-      li.innerHTML = `
-            <div class="url-info">
-              <span class="url-hostname">${item.homePageName}</span>
-            </div>
-            <div class="url-actions">
-            <button class="btn-small remove-btn" data-url="${item.link}">移除</button>
-            </div>
-            `;
-      // <button class="btn-small test-btn" data-url="${subitem['links']}">测试</button>
-      // <button class="btn-small edit-btn" data-url="${subitem['links']}">编辑</button>
-
-      list.appendChild(li);
-    }
-
-
-
     // 绑定按钮事件
     attachListEvents();
   }
@@ -153,20 +123,12 @@ function attachListEvents() {
     });
   });
 
-  // 编辑按钮
-  document.querySelectorAll('.edit-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const target = e.target as HTMLElement;
-      if (!target) return;
-      // const url = target.dataset.url;
-      chrome.runtime.openOptionsPage();
-    });
-  });
 
   // 移除按钮
   document.querySelectorAll('.remove-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       const target = e.target as HTMLElement;
+      console.log('removetarget:', target);
       if (!target) return;
       const url = target.dataset.url;
       if (!url) return;
@@ -177,7 +139,14 @@ function attachListEvents() {
     });
   });
 }
-
+// 编辑按钮
+const editCheckinItem = (item: CheckinItem) => {
+  showAddBtn.value = true;
+  handleType.value = 'update';
+  currentItem.value.btnXPath = item.btnXPath || '';
+  currentItem.value.homePageName = item.homePageName || '';
+  currentItem.value.link = item.link || document.location.href;
+}
 // // 测试单个网站签到
 // async function testSingleCheckin(url: string) {
 //   // 修复：确保 url 参数正确拼接到 test.html 地址
@@ -186,18 +155,31 @@ function attachListEvents() {
 //     active: true
 //   });
 // }
-
+// 添加签到网站
+const showAddBtn = ref(false);
+const currentItem = ref<CheckinItem>({} as CheckinItem);
+const handleType = ref('create');
+const addCheckinItem = () => {
+  showAddBtn.value = true;
+  handleType.value = 'create';
+}
+const handleItemOK = async () => {
+  await loadUrlList();
+  showAddBtn.value = false;
+}
 // 移除签到网站
 async function removeCheckinUrl(url: string) {
-
   const data = await chrome.storage.sync.get('checkinLists').then(res => res.checkinLists) as string;
+  console.log('checkinListsremove:', data);
   if (!data || data.length === 0) {
     return;
   }
   const checkinLists: CheckinItem[] = JSON.parse(data) || [];
+  console.log('checkinListsremove2:', checkinLists);
   await chrome.storage.sync.set({
     checkinLists: JSON.stringify(checkinLists.filter(item => item.link !== url))
   });
+  await loadUrlList();
 }
 
 // 打开详细设置页面
@@ -229,14 +211,28 @@ function openOptionsPage() {
         <h4>📋 签到网站列表</h4>
         <button id="toggleList" class="btn-toggleicon" alt="切换列表显示">▼</button>
       </div>
-      <ul id="urlList" class="url-list"></ul>
+      <div id="urlList" class="url-list">
+        <li v-for="(item, index) in checkinLists" :key="item.link" class="url-item">
+          <div class="url-info">
+            <span class="url-index"> {{ index + 1 }} </span>
+            <span class="url-hostname">{{ item.homePageName }}</span>
+          </div>
+          <div class="url-actions">
+            <button class="btn-small edit-btn" data-url="{{ item }}" @click="editCheckinItem(item)">编辑</button>
+            <button class="btn-small remove-btn" data-url="{{ item.link }}"
+              @click="removeCheckinUrl(item.link)">移除</button>
+          </div>
+        </li>
+        <button v-show="!showAddBtn" class="btn-success addbtn" @click="addCheckinItem">+ 添加更多</button>
+        <CheckinListCU :show="showAddBtn" :type="handleType" :current-item="currentItem" :current-list="checkinLists"
+          @ok="handleItemOK" @cancel="showAddBtn = false" />
+        <div v-show="showAddBtn" class="current-site">
+        </div>
+      </div>
     </div>
-    <!--
-    <div class="current-site">
-      <p id="currentHostname">当前网站: 未检测</p>
-      <button id="addCurrentPage" class="btn-success">➕ 添加当前页面</button>
-    </div>
--->
+
+
+
     <!-- <div class="quick-settings">
       <label class="switch">
         <input type="checkbox" id="enableNotifications">
@@ -327,13 +323,21 @@ button {
 .btn-secondary,
 .btn-success {
   flex: 1;
-  padding: 12px;
-  border: none;
+  padding: 6px 12px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.addbtn {
+  width: 100%;
+  color: #4b4e55;
+  border: 1px dashed #73757e;
+  opacity: 0.5;
+}
+
+.btn-success:hover {
+  opacity: 1;
 }
 
 .btn-primary {
@@ -366,7 +370,6 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
 }
 
 .section-header h4 {
@@ -404,11 +407,6 @@ button {
   color: #667eea;
   font-weight: bold;
   margin-right: 8px;
-}
-
-.url-hostname {
-  color: #333;
-  font-size: 13px;
 }
 
 .url-rules {
@@ -458,11 +456,10 @@ button {
 }
 
 .current-site {
-  padding: 15px;
+  padding: 8px;
   background: #e8f4ff;
   border-radius: 8px;
   margin: 20px 0;
-  text-align: center;
 }
 
 .current-site p {
@@ -471,11 +468,6 @@ button {
   font-size: 13px;
 }
 
-.btn-success {
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-  color: white;
-  width: 100%;
-}
 
 .quick-settings {
   margin: 20px 0;
@@ -548,5 +540,58 @@ input:checked+.slider:before {
 
 .btn-link:hover {
   text-decoration: underline;
+}
+
+.add-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.add-input {
+  display: flex;
+  align-items: center;
+}
+
+.add-container label {
+  text-align: left;
+  text-align-last: justify;
+  width: 80px;
+  color: #555;
+}
+
+.add-container input[type="text"] {
+  width: calc(100% - 24px);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.add-to-list {
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.add-to-list:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.cancel-btn {
+  padding: 6px 12px;
+  margin-left: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #f0f0f0;
+  color: #666;
+}
+
+.cancel-btn:hover {
+  background: #e0e0e0;
 }
 </style>

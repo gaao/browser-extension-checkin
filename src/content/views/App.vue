@@ -120,6 +120,7 @@ async function detectCheckinElements() {
         XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
         null
       );
+      // console.log('检查elements:', elements);
       if (elements && elements.snapshotLength > 0) {
         hasCheckinSelector = true;
         console.log('elements:', keyword, elements);
@@ -127,7 +128,6 @@ async function detectCheckinElements() {
       } else {
         continue;
       }
-      // // console.log('elements:', elements);
       // for (let i = 0; i < elements.snapshotLength; i++) {
       //   const element = elements.snapshotItem(i);
       //   // console.log('element:', element);
