@@ -51,7 +51,6 @@ async function addCheckinItem() {
   await chrome.storage.sync.set({
     checkinLists: JSON.stringify(checkinLists.value)
   });
-  // await loadUrlList();
   emit('ok');
 }
 

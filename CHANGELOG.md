@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 ↓ 从这里插入新记录 ↓
+## 0.3.0 (2025-12-19)
+
+  - 优化弹窗界面布局
+  - 改进列表渲染逻辑，移除冗余的 DOM 操作
+  - 添加列表样式优化和交互效果
+
 ## 0.2.0 (2025-12-17)
 
   - 添加span节点的支持
