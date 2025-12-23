@@ -4,6 +4,7 @@ type CheckinItem = {
   link: string;
   homePageName: string;
   btnXPath: string;
+  isCheckedIn: boolean;
 }
 const props = defineProps({
   show: {
@@ -37,13 +38,16 @@ async function addCheckinItem() {
   const newItem: CheckinItem = {
     link: currentItem.value.link,
     homePageName: currentItem.value.homePageName,
-    btnXPath: currentItem.value.btnXPath
+    btnXPath: currentItem.value.btnXPath,
+    isCheckedIn: currentItem.value.isCheckedIn || false
   };
-  console.log('newItem:', props.type, newItem);
+  // console.log('newItem:', props.type, newItem,JSON.stringify(checkinLists.value));
   if (props.type === 'create') {
     checkinLists.value.push(newItem);
-  } else {
+  }
+  if (props.type === 'update') {
     const index = checkinLists.value.findIndex(item => item.link === newItem.link);
+    // console.log('列表index:', index);
     if (index !== -1) {
       checkinLists.value[index] = newItem;
     }
@@ -67,7 +71,7 @@ async function addCheckinItem() {
     </div>
     <div class="item-input">
       <label for="checkinHomeLink">网站地址：</label>
-      <input id="checkinHomeLink" type="text" placeholder="请输入" v-model="currentItem.link">
+      <input id="checkinHomeLink" type="text" placeholder="请输入" v-model="currentItem.link" :disabled="type === 'update'">
     </div>
     <div class="item-input">
       <button class="btn-primary" @click="addCheckinItem">保存</button>

@@ -5,9 +5,10 @@ type CheckinItem = {
   link: string;
   homePageName: string;
   btnXPath: string;
+  isCheckedIn: boolean;
 }
 const showBtn = ref(false)
-let findCheckin = ref<CheckinItem>({ link: '', homePageName: '', btnXPath: '' })
+let findCheckin = ref<CheckinItem>({ link: '', homePageName: '', btnXPath: '', isCheckedIn: false })
 const initContent = async () => {
   //从缓存读取打卡列表如果和当前页面元素匹配则不显示
   const data = await chrome.storage.sync.get('checkinLists').then(res => res.checkinLists) as string;

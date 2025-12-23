@@ -6,6 +6,7 @@ type CheckinItem = {
   link: string;
   homePageName: string;
   btnXPath: string;
+  isCheckedIn: boolean;
 }
 const checkinLists = ref<Array<CheckinItem>>([]);
 document.addEventListener('DOMContentLoaded', async () => {
@@ -109,21 +110,6 @@ async function loadUrlList() {
 
 // 绑定列表事件
 function attachListEvents() {
-  // 测试按钮
-  document.querySelectorAll('.test-btn').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      const target = e.target as HTMLElement;
-      if (!target) return;
-      const url = target.dataset.url;
-      console.log('签到url:', url);
-      // if (url) await testSingleCheckin(url);
-      // 自动签到
-      // 调用后台脚本执行单个签到
-      await chrome.runtime.sendMessage({ action: 'checkinNow', url });
-    });
-  });
-
-
   // 移除按钮
   document.querySelectorAll('.remove-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
@@ -139,6 +125,19 @@ function attachListEvents() {
     });
   });
 }
+// 测试单个网站签到
+async function testSingleCheckin(item: CheckinItem) {
+  // 修复：确保 url 参数正确拼接到 test.html 地址
+  try {
+    const result = await chrome.runtime.sendMessage({ action: 'singleCheckin', item });
+    console.log('popresult:', result);
+    if (result.success) {
+      // 刷新状态
+      setTimeout(initPopup, 2000);
+    }
+  } finally {
+  }
+}
 // 编辑按钮
 const editCheckinItem = (item: CheckinItem) => {
   showAddBtn.value = true;
@@ -147,21 +146,15 @@ const editCheckinItem = (item: CheckinItem) => {
   currentItem.value.homePageName = item.homePageName || '';
   currentItem.value.link = item.link || document.location.href;
 }
-// // 测试单个网站签到
-// async function testSingleCheckin(url: string) {
-//   // 修复：确保 url 参数正确拼接到 test.html 地址
-//   chrome.tabs.create({
-//     url: encodeURIComponent(url),
-//     active: true
-//   });
-// }
+
 // 添加签到网站
 const showAddBtn = ref(false);
-const currentItem = ref<CheckinItem>({} as CheckinItem);
+const currentItem = ref<CheckinItem>({ link: '', homePageName: '', btnXPath: '', isCheckedIn: false });
 const handleType = ref('create');
 const addCheckinItem = () => {
   showAddBtn.value = true;
   handleType.value = 'create';
+  currentItem.value.link = document.location.href;
 }
 const handleItemOK = async () => {
   await loadUrlList();
@@ -218,6 +211,8 @@ function openOptionsPage() {
             <span class="url-hostname">{{ item.homePageName }}</span>
           </div>
           <div class="url-actions">
+            <span v-if="item.isCheckedIn" class="text-success">已签到</span>
+            <button class="btn-small test-btn" @click="testSingleCheckin(item)">测试</button>
             <button class="btn-small edit-btn" data-url="{{ item }}" @click="editCheckinItem(item)">编辑</button>
             <button class="btn-small remove-btn" data-url="{{ item.link }}"
               @click="removeCheckinUrl(item.link)">移除</button>
@@ -429,6 +424,11 @@ button {
 .url-actions {
   display: flex;
   gap: 5px;
+}
+
+.text-success {
+  color: #4CAF50;
+  margin-top: 4px;
 }
 
 .btn-small {

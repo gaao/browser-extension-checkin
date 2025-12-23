@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 ↓ 从这里插入新记录 ↓
+## 0.4.0 (2025-12-20)
+
+  - 添加签到状态跟踪功能
+  - 在CheckinItem类型中增加isCheckedIn字段记录签到状态
+  - 实现单个网站签到测试功能并更新状态显示
+  - 添加已签到状态显示和测试按钮
+
 ## 0.3.0 (2025-12-19)
 
   - 优化弹窗界面布局
