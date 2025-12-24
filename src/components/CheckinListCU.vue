@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PropType, ref } from 'vue';
+import { PropType } from 'vue';
 type CheckinItem = {
   link: string;
   homePageName: string;
@@ -28,33 +28,36 @@ const emit = defineEmits(['ok', 'cancel']);
 function onCancel() {
   emit('cancel');
 }
-const checkinLists = ref<Array<CheckinItem>>(props.currentList);
-const currentItem = ref<CheckinItem>(props.currentItem);
+// console.log('itemscheckinLists:', props.currentList,toRaw(checkinLists.value));
 async function addCheckinItem() {
-  if (!currentItem.value.btnXPath || !currentItem.value.homePageName) {
+  let checkinLists = props.currentList
+  console.log('itemcheckinLists:', checkinLists);
+  const currentItem = props.currentItem
+  if (!currentItem.btnXPath || !currentItem.homePageName) {
     alert('请输入签到按钮的 XPath 和网站名');
     return;
   }
   const newItem: CheckinItem = {
-    link: currentItem.value.link,
-    homePageName: currentItem.value.homePageName,
-    btnXPath: currentItem.value.btnXPath,
-    isCheckedIn: currentItem.value.isCheckedIn || false
+    link: currentItem.link,
+    homePageName: currentItem.homePageName,
+    btnXPath: currentItem.btnXPath,
+    isCheckedIn: currentItem.isCheckedIn || false
   };
-  // console.log('newItem:', props.type, newItem,JSON.stringify(checkinLists.value));
   if (props.type === 'create') {
-    checkinLists.value.push(newItem);
+    checkinLists.push(newItem);
   }
   if (props.type === 'update') {
-    const index = checkinLists.value.findIndex(item => item.link === newItem.link);
+    const index = checkinLists.findIndex(item => item.link === newItem.link);
     // console.log('列表index:', index);
     if (index !== -1) {
-      checkinLists.value[index] = newItem;
+      checkinLists[index] = newItem;
     }
   }
+  console.log('itemCU:', props.type, newItem, JSON.stringify(checkinLists));
   await chrome.storage.sync.set({
-    checkinLists: JSON.stringify(checkinLists.value)
+    checkinLists: JSON.stringify(checkinLists)
   });
+  checkinLists = []
   emit('ok');
 }
 
@@ -71,7 +74,8 @@ async function addCheckinItem() {
     </div>
     <div class="item-input">
       <label for="checkinHomeLink">网站地址：</label>
-      <input id="checkinHomeLink" type="text" placeholder="请输入" v-model="currentItem.link" :disabled="type === 'update'">
+      <input id="checkinHomeLink" type="text" placeholder="请输入" v-model="currentItem.link"
+        :disabled="type === 'update'">
     </div>
     <div class="item-input">
       <button class="btn-primary" @click="addCheckinItem">保存</button>

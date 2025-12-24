@@ -4,7 +4,7 @@ import { ref } from 'vue'
 defineProps({
   msg: String,
 })
-const defaultCheckinKeywords = ref('签到,打卡,每日签到,checkin,每日登录,领积分');
+const defaultCheckinKeywords = ref('签到,打卡,每日签到,每日登录,领积分');
 
 document.addEventListener('DOMContentLoaded', async () => {
   init() // 初始化

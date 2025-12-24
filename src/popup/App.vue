@@ -100,7 +100,7 @@ function formatDate(dateString: string) {
 async function loadUrlList() {
   const data = await chrome.storage.sync.get('checkinLists').then(res => res.checkinLists) as string;
   console.log('datauuuu:', typeof data, data);
-  checkinLists.value = JSON.parse(data) as CheckinItem[] || [];
+  checkinLists.value = data ? JSON.parse(data) as CheckinItem[] : [];
   const list = document.getElementById('urlList');
   if (list) {
     // 绑定按钮事件

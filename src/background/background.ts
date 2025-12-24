@@ -152,6 +152,7 @@ chrome.notifications.onButtonClicked.addListener(async (notificationId, buttonIn
 });
 // 执行单个签到
 async function singleCheckin(item: CheckinItem) {
+  console.log('单个签到item:', item);
   return await performSingleCheckin(item);
 }
 
@@ -197,7 +198,7 @@ async function performSingleCheckin(item: CheckinItem) {
   // 创建隐藏标签页
   const tab = await chrome.tabs.create({
     url: item.link,
-    // active: false
+    // active: false TODO: 静默签到（在签到list里添加一个active字段）
   });
 
   // 等待页面加载
@@ -246,13 +247,15 @@ async function performSingleCheckin(item: CheckinItem) {
     }
 
     if (clicked) {
-      item.isCheckedIn = true;
       // 原子更新：仅改当前项
+      // console.log('点击签到按钮:', item, userPreferences.checkinLists);
       const updated = userPreferences.checkinLists.map((s: CheckinItem) =>
         s.link === item.link ? { ...s, isCheckedIn: true } : s
       );
-      userPreferences.checkinLists = updated;
+      console.log('更新签到状态:', updated);
       chrome.storage.sync.set({ checkinLists: JSON.stringify(updated) });
+      // item.isCheckedIn = true;
+      // userPreferences.checkinLists = updated;
     }
 
     return clicked;
@@ -398,7 +401,7 @@ function showCheckinResult(successCount: number, totalCount: number) {
 }
 
 // 监听来自popup的消息
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   switch (request.action) {
     case 'singleCheckin':
       singleCheckin(request.item).then((success) => {
@@ -423,7 +426,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case 'resetToday':
       userPreferences.lastCheckinDate = null;
       chrome.storage.sync.set({ lastCheckinDate: null });
+      await initBackground();
+      console.log('resetToday1:', userPreferences.checkinLists);
+      if (userPreferences.checkinLists.length === 0) {
+        sendResponse({ success: false, message: '没有签到列表' });
+        return true;
+      }
       userPreferences.checkinLists.forEach((item: { isCheckedIn: boolean; }) => item.isCheckedIn = false);
+      console.log('resetToday2:', userPreferences.checkinLists);
       chrome.storage.sync.set({ checkinLists: JSON.stringify(userPreferences.checkinLists) });
       sendResponse({ success: true });
       return true;

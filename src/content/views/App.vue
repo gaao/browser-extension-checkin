@@ -13,9 +13,9 @@ const initContent = async () => {
   //从缓存读取打卡列表如果和当前页面元素匹配则不显示
   const data = await chrome.storage.sync.get('checkinLists').then(res => res.checkinLists) as string;
   const checkinLists: CheckinItem[] = data ? JSON.parse(data) : [];
-  console.log('checkinLists++:', checkinLists);
   if (checkinLists) {
     const hasCurrentPage = checkinLists.filter(item => item.link.includes(window.location.hostname));
+    console.log('hasCurrentPage:', hasCurrentPage);
     if (hasCurrentPage.length > 0) {
       showBtn.value = false;
       return;
@@ -23,6 +23,7 @@ const initContent = async () => {
   }
   // 检查页面是否包含打卡相关元素
   const hasCheckinSelector = await detectCheckinElements()
+  console.log('hasCheckin:', hasCheckinSelector);
   if (hasCheckinSelector) {
     showBtn.value = true;
   }
@@ -102,18 +103,23 @@ async function detectCheckinElements() {
       return result;
     }
     for (let keyword of checkinKeywords) {
-      // checkinKeywords.forEach(keyword => {
       // 使用 normalize-space 忽略多余空白，并支持大小写不敏感匹配
       // 构造 XPath：在整棵 DOM 树（.//）中查找任意元素（*），
       // 只要其“规范化后的纯文本内容”包含关键词即可。
-      // normalize-space(text()) 会去掉首尾空白并把内部连续空白压缩成单个空格，避免多余空格干扰匹配。
       // 同时匹配按钮文字、子节点文字、以及图片 alt 属性
-      const xpath = `.//*[
-        contains(normalize-space(text()), '${keyword}') 
-        or contains(normalize-space(.//*), '${keyword}')
-        or @alt and contains(@alt, '${keyword}')
+      //  const xpath = `.//*[
+      //   contains(normalize-space(text()), '${keyword}') 
+      //   or contains(normalize-space(.//*), '${keyword}')
+      //   or @alt and contains(@alt, '${keyword}')
+      // ]`;
+      const xpath = `//*[
+        text()[contains(., '${keyword}')] or
+        @*[contains(., '${keyword}')]
       ]`;
-      // console.log('xxx:', xpath);
+      // const xpath = `//*[
+      //   contains(normalize-space(text()), '${keyword}') or
+      //   contains(normalize-space(.), '${keyword}')
+      // ]`;
       const elements = document.evaluate(
         xpath,
         document.body,
@@ -121,8 +127,8 @@ async function detectCheckinElements() {
         XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
         null
       );
-      // console.log('检查elements:', elements);
       if (elements && elements.snapshotLength > 0) {
+        console.log('检查elements:', elements.snapshotLength);
         hasCheckinSelector = true;
         console.log('elements:', keyword, elements);
         return

@@ -34,7 +34,7 @@ export default defineManifest({
     "<all_urls>"
   ],
    background: {
-    service_worker: "src/background/background.js"
+    service_worker: "src/background/background.ts"
   },
   options_page: "src/options/index.html",
   side_panel: {
