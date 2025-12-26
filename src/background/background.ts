@@ -38,7 +38,7 @@ const isJSON = function (str: any) {
 // 初始化
 async function initBackground() {
   const data = await chrome.storage.sync.get(Object.keys(userPreferences));
-  console.log('data:', data);
+  console.log('initBackgrounddata:', data);
   if (data) {
     Object.keys(data).forEach(key => {
       if (key in userPreferences) {
@@ -247,8 +247,10 @@ async function performSingleCheckin(item: CheckinItem) {
     }
 
     if (clicked) {
-      // 原子更新：仅改当前项
-      // console.log('点击签到按钮:', item, userPreferences.checkinLists);
+      await initBackground();
+      console.log('点击签到按钮:', item, userPreferences.checkinLists);
+      if(item.isCheckedIn) return false;
+      if(!userPreferences.checkinLists) return false;
       const updated = userPreferences.checkinLists.map((s: CheckinItem) =>
         s.link === item.link ? { ...s, isCheckedIn: true } : s
       );

@@ -131,10 +131,10 @@ async function testSingleCheckin(item: CheckinItem) {
   try {
     const result = await chrome.runtime.sendMessage({ action: 'singleCheckin', item });
     console.log('popresult:', result);
-    if (result.success) {
-      // 刷新状态
-      setTimeout(initPopup, 2000);
-    }
+    // if (result.success) {
+    //   // 刷新状态
+    //   setTimeout(initPopup, 2000);
+    // }
   } finally {
   }
 }
@@ -189,10 +189,10 @@ function openOptionsPage() {
       <div class="status-indicator" id="statusIndicator"></div>
     </div>
 
-    <div class="status-card">
+    <!-- <div class="status-card">
       <p id="lastCheckinTime">加载中...</p>
       <p>待签到网站: <span id="totalSites">0</span> 个</p>
-    </div>
+    </div> -->
 
     <div class="action-buttons">
       <button id="checkinNow" class="btn-primary">🎯 立即签到</button>
