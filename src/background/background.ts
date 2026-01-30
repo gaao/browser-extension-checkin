@@ -36,9 +36,9 @@ const isJSON = function (str: any) {
   return false;
 }
 // 初始化
-async function initBackground() {
+async function initgetstorage() {
   const data = await chrome.storage.sync.get(Object.keys(userPreferences));
-  console.log('initBackgrounddata:', data);
+  console.log('initgetstoragedata:', data);
   if (data) {
     Object.keys(data).forEach(key => {
       if (key in userPreferences) {
@@ -58,23 +58,15 @@ async function initBackground() {
 
 // 监听浏览器启动
 chrome.runtime.onStartup.addListener(async () => {
-  await initBackground();
   await checkAndAskForCheckin();
 });
 
 // 监听插件启动
 chrome.runtime.onInstalled.addListener(async () => {
-  await initBackground();
+  await initgetstorage();
   console.log('自动签到插件已安装');
 });
 
-// 监听新窗口打开（针对第一次使用浏览器）
-chrome.windows.onCreated.addListener(async (window) => {
-  // 延迟一下，确保浏览器完全启动
-  setTimeout(async () => {
-    await checkAndAskForCheckin();
-  }, 3000);
-});
 
 // 检查并询问是否签到
 async function checkAndAskForCheckin() {
@@ -201,8 +193,8 @@ async function performSingleCheckin(item: CheckinItem) {
     // active: false TODO: 静默签到（在签到list里添加一个active字段）
   });
 
-  // 等待页面加载
-  if (tab.id !== undefined) {
+  // 等待页面加载完成
+  if (tab && tab.id !== undefined && tab.status === 'complete') {
     await waitForPageLoad(tab.id);
   }
   // 执行签到逻辑：先获取真正的签到按钮，再点击
@@ -247,7 +239,7 @@ async function performSingleCheckin(item: CheckinItem) {
     }
 
     if (clicked) {
-      await initBackground();
+      await initgetstorage();
       console.log('点击签到按钮:', item, userPreferences.checkinLists);
       if(item.isCheckedIn) return false;
       if(!userPreferences.checkinLists) return false;
@@ -428,7 +420,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     case 'resetToday':
       userPreferences.lastCheckinDate = null;
       chrome.storage.sync.set({ lastCheckinDate: null });
-      await initBackground();
+      await initgetstorage();
       console.log('resetToday1:', userPreferences.checkinLists);
       if (userPreferences.checkinLists.length === 0) {
         sendResponse({ success: false, message: '没有签到列表' });

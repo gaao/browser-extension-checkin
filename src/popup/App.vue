@@ -107,7 +107,26 @@ async function loadUrlList() {
     attachListEvents();
   }
 }
-
+// 拖拽排序
+let dragIndex = -1;
+// 开始拖拽
+function startDrag(index: number) {
+  dragIndex = index;
+}
+// 处理拖拽
+function handleDrag(index: number) {
+  if (dragIndex === -1) return;
+  // 交换元素位置
+  [checkinLists.value[dragIndex], checkinLists.value[index]] = [checkinLists.value[index], checkinLists.value[dragIndex]];
+  // 更新索引
+  dragIndex = index;
+  // 保存新的排序
+  saveCheckinLists();
+}
+// 保存新排序
+function saveCheckinLists() {
+  chrome.storage.sync.set({ checkinLists: JSON.stringify(checkinLists.value) });
+}
 // 绑定列表事件
 function attachListEvents() {
   // 移除按钮
@@ -205,8 +224,10 @@ function openOptionsPage() {
         <button id="toggleList" class="btn-toggleicon" alt="切换列表显示">▼</button>
       </div>
       <div id="urlList" class="url-list">
-        <li v-for="(item, index) in checkinLists" :key="item.link" class="url-item">
+        <li v-for="(item, index) in checkinLists" :key="item.link" class="url-item" draggable="true"
+          @dragstart="startDrag(index)" @dragenter.prevent @dragover.prevent @dragenter="handleDrag(index)">
           <div class="url-info">
+            <span class="drag-icon" title="拖拽排序">⋮⋮</span>
             <span class="url-index"> {{ index + 1 }} </span>
             <span class="url-hostname">{{ item.homePageName }}</span>
           </div>
@@ -396,6 +417,18 @@ button {
 
 .url-info {
   flex: 1;
+}
+
+.drag-icon {
+  display: none;
+  cursor: move;
+  font-size: 14px;
+  color: #999;
+  margin-right: 8px;
+}
+
+.url-item:hover .drag-icon {
+  display: inline-block;
 }
 
 .url-index {

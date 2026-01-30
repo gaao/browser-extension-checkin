@@ -2,7 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 ↓ 从这里插入新记录 ↓
-## 0.4.0 (2025-12-23)
+## 1.1.0 (2026-01-30)
+
+  - 新增拖拽排序功能
+  - 优化签到时机，等待页面加载完成后再签到
+
+## 1.0.3 (2025-12-23)
 
   - 添加签到状态跟踪功能
   - 在CheckinItem类型中增加isCheckedIn字段记录签到状态
