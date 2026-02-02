@@ -146,7 +146,6 @@ function attachListEvents() {
 }
 // 测试单个网站签到
 async function testSingleCheckin(item: CheckinItem) {
-  // 修复：确保 url 参数正确拼接到 test.html 地址
   try {
     const result = await chrome.runtime.sendMessage({ action: 'singleCheckin', item });
     console.log('popresult:', result);

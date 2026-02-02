@@ -107,19 +107,16 @@ async function detectCheckinElements() {
       // 构造 XPath：在整棵 DOM 树（.//）中查找任意元素（*），
       // 只要其“规范化后的纯文本内容”包含关键词即可。
       // 同时匹配按钮文字、子节点文字、以及图片 alt 属性
-      //  const xpath = `.//*[
-      //   contains(normalize-space(text()), '${keyword}') 
-      //   or contains(normalize-space(.//*), '${keyword}')
-      //   or @alt and contains(@alt, '${keyword}')
-      // ]`;
-      const xpath = `//*[
-        text()[contains(., '${keyword}')] or
-        @*[contains(., '${keyword}')]
-      ]`;
       // const xpath = `//*[
-      //   contains(normalize-space(text()), '${keyword}') or
-      //   contains(normalize-space(.), '${keyword}')
+      //   text()[contains(., '${keyword}')] or
+      //   @*[contains(., '${keyword}')]
       // ]`;
+      const escapeXPathString = (str: string) => {
+        return str.replace(/"/g, '\\"').replace(/'/g, "\\'");
+      };
+
+      const safeKeyword = escapeXPathString(keyword);
+      const xpath = `//*[.//text()[contains(., "${safeKeyword}")] or @*[contains(., "${safeKeyword}")]]`;
       const elements = document.evaluate(
         xpath,
         document.body,

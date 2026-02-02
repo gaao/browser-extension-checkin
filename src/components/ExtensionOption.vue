@@ -14,11 +14,9 @@ const init = () => {
   // 从 localStorage 获取已保存的关键字
   chrome.storage.sync.get('checkinKeywords', function (data) {
     if (data.checkinKeywords) {
-      // document.getElementById('currentKeywords').textContent = data.checkinKeywords;
       defaultCheckinKeywords.value = data.checkinKeywords as string;
     }
     else {
-      // document.getElementById('currentKeywords').textContent = defaultCheckinKeywords.value;
       defaultCheckinKeywords.value = defaultCheckinKeywords.value.trim();
       // 存储到 localStorage
       chrome.storage.sync.set({ checkinKeywords: defaultCheckinKeywords.value }, function () {

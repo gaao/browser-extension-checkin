@@ -206,43 +206,50 @@ async function performSingleCheckin(item: CheckinItem) {
 
     let clicked = false;
     try {
-      const [{ result }] = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: (xpath: string) => {
-          if (!xpath) return false;
-          try {
-            const ele = document.evaluate(
-              xpath,
-              document.body,
-              null,
-              XPathResult.FIRST_ORDERED_NODE_TYPE,
-              null
-            ).singleNodeValue as HTMLElement;
-            if (ele) {
-              // 保险：确保元素可见并可交互
-              ele.scrollIntoView({ block: 'center' });
-              setTimeout(() => ele.click(), 2000);
-              console.log('通过 XPath 点击了按钮');
-              return true;
+      console.log('签到item5-1:', item.btnXPath);
+      // * 手动等待 2s 确保 DOM 元素加载完成应该有更好的方式
+      setTimeout(async () => {
+        const [{ result }] = await chrome.scripting.executeScript({
+          target: { tabId: tab.id! },
+          func: (xpath: string) => {
+            console.log('签到item5-2:', xpath);
+            if (!xpath) return false;
+            try {
+              const ele = document.evaluate(
+                xpath,
+                document.body,
+                null,
+                XPathResult.FIRST_ORDERED_NODE_TYPE,
+                null
+              ).singleNodeValue as HTMLElement;
+              console.log('签到item5-3:', ele);
+              if (ele) {
+                // 保险：确保元素可见并可交互
+                ele.scrollIntoView({ block: 'center' });
+                setTimeout(() => ele.click(), 2000);
+                console.log('通过 XPath 点击了按钮');
+                return true;
+              }
+            } catch (e) {
+              console.error('XPath 执行错误:', e);
             }
-          } catch (e) {
-            console.error('XPath 执行错误:', e);
-          }
-          return false;
-        },
-        args: [item.btnXPath],
-        world: 'MAIN'
-      });
-      clicked = Boolean(result);
+            return false;
+          },
+          args: [item.btnXPath],
+          world: 'MAIN'
+        });
+        clicked = Boolean(result);
+      }, 2000)
+
     } catch (e) {
       console.error('注入脚本失败:', e);
     }
-
+    console.log('签到item6', clicked)
     if (clicked) {
       await initgetstorage();
       console.log('点击签到按钮:', item, userPreferences.checkinLists);
-      if(item.isCheckedIn) return false;
-      if(!userPreferences.checkinLists) return false;
+      if (item.isCheckedIn) return false;
+      if (!userPreferences.checkinLists) return false;
       const updated = userPreferences.checkinLists.map((s: CheckinItem) =>
         s.link === item.link ? { ...s, isCheckedIn: true } : s
       );
