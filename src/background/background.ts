@@ -58,6 +58,8 @@ async function initgetstorage() {
 
 // 监听浏览器启动
 chrome.runtime.onStartup.addListener(async () => {
+  console.log('浏览器启动');
+  await initgetstorage();
   await checkAndAskForCheckin();
 });
 
@@ -239,25 +241,27 @@ async function performSingleCheckin(item: CheckinItem) {
           world: 'MAIN'
         });
         clicked = Boolean(result);
+        if (clicked) {
+          await initgetstorage();
+          console.log('点击签到按钮:', item, userPreferences.checkinLists);
+          if (item.isCheckedIn) return false;
+          if (!userPreferences.checkinLists) return false;
+          const updated = userPreferences.checkinLists.map((s: CheckinItem) =>
+            s.link === item.link ? { ...s, isCheckedIn: true } : s
+          );
+          console.log('更新签到状态:', updated);
+          chrome.storage.sync.set({ checkinLists: JSON.stringify(updated) });
+          // item.isCheckedIn = true;
+          // userPreferences.checkinLists = updated;
+          return true;
+        }
       }, 2000)
 
     } catch (e) {
       console.error('注入脚本失败:', e);
     }
     console.log('签到item6', clicked)
-    if (clicked) {
-      await initgetstorage();
-      console.log('点击签到按钮:', item, userPreferences.checkinLists);
-      if (item.isCheckedIn) return false;
-      if (!userPreferences.checkinLists) return false;
-      const updated = userPreferences.checkinLists.map((s: CheckinItem) =>
-        s.link === item.link ? { ...s, isCheckedIn: true } : s
-      );
-      console.log('更新签到状态:', updated);
-      chrome.storage.sync.set({ checkinLists: JSON.stringify(updated) });
-      // item.isCheckedIn = true;
-      // userPreferences.checkinLists = updated;
-    }
+
 
     return clicked;
     // // 方法2: 使用文本匹配（恢复并增强）

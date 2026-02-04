@@ -41,7 +41,7 @@ async function initPopup() {
         button.textContent = '签到中...';
         try {
           const result = await chrome.runtime.sendMessage({ action: 'checkinNow' });
-          if (result.success) {
+          if (result && result.success) {
             // 刷新状态
             setTimeout(initPopup, 2000);
           }
@@ -100,7 +100,12 @@ function formatDate(dateString: string) {
 async function loadUrlList() {
   const data = await chrome.storage.sync.get('checkinLists').then(res => res.checkinLists) as string;
   console.log('datauuuu:', typeof data, data);
-  checkinLists.value = data ? JSON.parse(data) as CheckinItem[] : [];
+  if (!data) return;
+  if (typeof data !== 'string') {
+    checkinLists.value = data as CheckinItem[];
+  } else {
+    checkinLists.value = data ? JSON.parse(data) as CheckinItem[] : [];
+  }
   const list = document.getElementById('urlList');
   if (list) {
     // 绑定按钮事件
